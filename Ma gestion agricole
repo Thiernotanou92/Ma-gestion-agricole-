@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion Agricole Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 15px; background: #121212; color: white; }
+        .card { background: #1e1e1e; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
+        input { width: 93%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #444; background: #222; color: white; }
+        button { width: 100%; padding: 14px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        .photo-btn { background: #007bff; }
+        .excel-btn { background: #1d6f42; margin-top: 20px; }
+        .delete-btn { background: #dc3545; margin-top: 10px; padding: 8px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th, td { border: 1px solid #333; padding: 10px; text-align: left; }
+        th { background: #252525; }
+    </style>
+</head>
+<body onload="chargerDonnees()">
+
+    <h2>🚜 Mon Inventaire</h2>
+
+    <div class="card">
+        <button class="photo-btn" onclick="document.getElementById('imageInput').click()">📸 Scanner une facture (OCR)</button>
+        <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="processImage(this)">
+        
+        <input type="text" id="produit" placeholder="Nom du produit">
+        <input type="number" id="prix" placeholder="Prix unitaire" oninput="calculerTotal()">
+        <input type="number" id="quantite" placeholder="Quantité" oninput="calculerTotal()">
+        
+        <p style="text-align:right">Total : <strong id="totalAffichage">0</strong></p>
+        <button onclick="ajouterAuStock()">➕ Ajouter au Stock</button>
+    </div>
+
+    <table id="tableStock">
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Prix</th>
+                <th>Qté</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <button class="excel-btn" onclick="exporterExcel()">📊 Exporter vers Excel (.xlsx)</button>
+    <button class="delete-btn" onclick="effacerTout()">⚠️ Effacer tout l'inventaire</button>
+
+    <script>
+        let inventaire = [];
+
+        // 1. Charger les données au démarrage
+        function chargerDonnees() {
+            const donneesSauvegardees = localStorage.getItem('monInventaireAgricole');
+            if (donneesSauvegardees) {
+                inventaire = JSON.parse(donneesSauvegardees);
+                majTableau();
+            }
+        }
+
+        // 2. Sauvegarder les données après chaque ajout
+        function sauvegarderDonnees() {
+            localStorage.setItem('monInventaireAgricole', JSON.stringify(inventaire));
+        }
+
+        function calculerTotal() {
+            const prix = document.getElementById('prix').value || 0;
+            const qte = document.getElementById('quantite').value || 0;
+            document.getElementById('totalAffichage').innerText = (prix * qte).toLocaleString();
+        }
+
+        function ajouterAuStock() {
+            const p = document.getElementById('produit').value;
+            const pr = document.getElementById('prix').value;
+            const q = document.getElementById('quantite').value;
+            if(!p || !pr || !q) return alert("Complète tous les champs !");
+
+            const item = { Produit: p, Prix: pr, Quantite: q, Total: pr * q };
+            inventaire.push(item);
+            
+            sauvegarderDonnees(); // Sauvegarde automatique
+            majTableau();
+            
+            document.getElementById('produit').value = "";
+            document.getElementById('prix').value = "";
+            document.getElementById('quantite').value = "";
+        }
+
+        function majTableau() {
+            const tbody = document.querySelector('#tableStock tbody');
+            tbody.innerHTML = inventaire.map(i => `<tr><td>${i.Produit}</td><td>${i.Prix}</td><td>${i.Quantite}</td><td>${i.Total}</td></tr>`).join('');
+        }
+
+        function exporterExcel() {
+            if(inventaire.length === 0) return alert("Le stock est vide !");
+            const ws = XLSX.utils.json_to_sheet(inventaire);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Inventaire");
+            XLSX.writeFile(wb, "Inventaire_Agricole.xlsx");
+        }
+
+        function effacerTout() {
+            if(confirm("Es-tu sûr de vouloir tout effacer ?")) {
+                inventaire = [];
+                localStorage.removeItem('monInventaireAgricole');
+                majTableau();
+            }
+        }
+
+        async function processImage(input) {
+            const btn = document.querySelector('.photo-btn');
+            btn.innerText = "⏳ Analyse en cours...";
+            try {
+                const { data: { text } } = await Tesseract.recognize(input.files[0], 'fra');
+                alert("Analyse terminée !");
+            } catch (e) { alert("Erreur OCR."); }
+            btn.innerText = "📸 Scanner une facture (OCR)";
+        }
+    </script>
+</body>
+</html>
