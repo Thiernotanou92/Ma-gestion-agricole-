@@ -3,115 +3,272 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agri-Sheet Guinée</title>
+    <title>Agri-Manager Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; background-color: #0f172a; color: white; padding: 10px; margin: 0; }
-        .container { max-width: 600px; margin: auto; }
-        
-        /* Zone Photo en haut (toujours visible) */
-        .photo-area { position: sticky; top: 0; background: #1e293b; z-index: 10; padding: 10px; border-bottom: 2px solid #3b82f6; text-align: center; }
-        #preview { max-height: 150px; width: auto; border-radius: 5px; display: none; margin: 0 auto; }
-        .btn-scan { background: #3b82f6; border: none; padding: 10px 20px; color: white; border-radius: 20px; font-weight: bold; font-size: 0.9em; margin-bottom: 5px; }
-        
-        /* Tableau style Excel */
-        .sheet-container { padding: 10px; padding-bottom: 100px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background: #334155; color: #94a3b8; font-size: 0.8em; padding: 8px; text-align: center; }
-        td { padding: 5px; border-bottom: 1px solid #334155; }
-        
-        /* Inputs dans le tableau */
-        input[type="number"] { background: transparent; border: 1px solid #475569; color: white; width: 100%; padding: 8px; text-align: center; border-radius: 5px; font-size: 1.1em; }
-        input:focus { border-color: #22c55e; outline: none; background: #0f172a; }
-        
-        .row-total { text-align: right; font-weight: bold; color: #fbbf24; padding-right: 10px; }
-        .btn-del { color: #ef4444; background: none; border: none; font-size: 1.2em; }
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #10b981; /* Vert Émeraude Pro */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --border: #334155;
+        }
 
-        /* Boutons d'action */
-        .floating-menu { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; padding: 15px; border-top: 2px solid #22c55e; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -4px 10px rgba(0,0,0,0.5); }
-        .total-display { font-size: 1.2em; font-weight: bold; color: #22c55e; }
-        .btn-add { background: #22c55e; color: black; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding-bottom: 120px; /* Espace pour le total en bas */
+        }
+
+        /* En-tête Pro */
+        header {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+        .subtitle { font-size: 0.8rem; color: var(--text-muted); font-weight: 400; }
+
+        .btn-print {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        /* Zone Photo discrète */
+        .scan-trigger {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            margin: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+            cursor: pointer;
+        }
+        #preview { width: 100%; border-radius: 8px; margin-top: 10px; display: none; border: 2px solid var(--border); }
+
+        /* Le Tableau Pro */
+        .table-container { padding: 0 15px; }
+        
+        .entry-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--border);
+            transition: transform 0.1s;
+        }
+
+        .input-group { flex: 1; }
+        .input-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        input {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            box-sizing: border-box;
+            outline: none;
+        }
+        input:focus { border-color: var(--accent); }
+
+        .line-total {
+            font-weight: 800;
+            color: var(--accent);
+            font-size: 1.1rem;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .btn-del {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* Barre de Total Flottante (Style App Bancaire) */
+        .floating-footer {
+            position: fixed;
+            bottom: 20px;
+            left: 5%;
+            width: 90%;
+            background: var(--accent);
+            color: #064e3b;
+            padding: 15px 20px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+            box-sizing: border-box;
+            z-index: 200;
+        }
+
+        .total-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; opacity: 0.8; }
+        .grand-total { font-size: 1.4rem; font-weight: 800; }
+        
+        .btn-add {
+            background: #064e3b;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Mode Impression */
+        @media print {
+            body { background: white; color: black; padding: 0; }
+            header, .floating-footer, .btn-del, .scan-trigger { display: none; }
+            .entry-card { border: 1px solid #ccc; break-inside: avoid; background: white; color: black; box-shadow: none; }
+            input { border: none; background: transparent; color: black; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 20px; border-bottom: 2px solid black; padding-bottom: 10px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="photo-area">
-        <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📸 VOIR PHOTO CAHIER</button>
-        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleImage(event)">
-        <img id="preview">
+<header>
+    <div>
+        <h1>Agri-Manager</h1>
+        <div class="subtitle">Gestion Commerciale Pro</div>
+    </div>
+    <button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
+</header>
+
+<div class="print-header" style="display:none;">
+    <h2>Bilan des Ventes</h2>
+    <p>Date: <span id="datePrint"></span></p>
+</div>
+
+<div class="scan-trigger" onclick="document.getElementById('fileInput').click()">
+    📷 Ouvrir Cahier / Photo
+</div>
+<input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleImage(event)">
+<div style="padding: 0 15px;"><img id="preview"></div>
+
+<div class="table-container" id="listeVentes">
     </div>
 
-    <div class="sheet-container">
-        <h3 style="margin:0; color:#94a3b8; font-size:0.9em; text-align:center;">Remplis ton tableau ici :</h3>
-        <table id="myTable">
-            <thead>
-                <tr>
-                    <th style="width: 40%">Prix (GNF)</th>
-                    <th style="width: 25%">Qté</th>
-                    <th style="width: 30%">Total</th>
-                    <th style="width: 5%"></th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                </tbody>
-        </table>
-        <br><br>
+<div class="floating-footer">
+    <div>
+        <div class="total-label">Chiffre d'Affaires</div>
+        <div class="grand-total"><span id="grandTotal">0</span> <small>GNF</small></div>
     </div>
-
-    <div class="floating-menu">
-        <div class="total-display">
-            TOTAL : <br>
-            <span id="grandTotal">0</span>
-        </div>
-        <button class="btn-add" onclick="addRow()">➕ LIGNE</button>
-    </div>
+    <button class="btn-add" onclick="ajouterLigne()">+</button>
 </div>
 
 <script>
-    // 1. Ajouter une ligne vide
-    function addRow() {
-        const tbody = document.getElementById('tableBody');
-        const tr = document.createElement('tr');
-        
-        tr.innerHTML = `
-            <td><input type="number" placeholder="0" oninput="calc(this)"></td>
-            <td><input type="number" placeholder="0" oninput="calc(this)"></td>
-            <td class="row-total">0</td>
-            <td><button class="btn-del" onclick="del(this)">×</button></td>
+    // 1. Charger les données sauvegardées au démarrage
+    window.onload = function() {
+        const savedData = localStorage.getItem('agriData');
+        if (savedData) {
+            document.getElementById('listeVentes').innerHTML = savedData;
+            reattachEvents(); // Réactiver les calculs
+            calculerTotalGeneral();
+        } else {
+            ajouterLigne(); // Une ligne vide au début
+        }
+        document.getElementById('datePrint').innerText = new Date().toLocaleDateString();
+    };
+
+    // 2. Ajouter une nouvelle "Carte" de vente
+    function ajouterLigne() {
+        const div = document.createElement('div');
+        div.className = 'entry-card';
+        div.innerHTML = `
+            <div class="input-group">
+                <label>Prix (GNF)</label>
+                <input type="number" placeholder="0" oninput="calculer(this)">
+            </div>
+            <div style="font-size:1.2rem; color:#94a3b8;">×</div>
+            <div class="input-group" style="flex:0.6">
+                <label>Qté</label>
+                <input type="number" placeholder="0" oninput="calculer(this)">
+            </div>
+            <div class="line-total">0</div>
+            <button class="btn-del" onclick="supprimer(this)">×</button>
         `;
-        tbody.appendChild(tr);
+        document.getElementById('listeVentes').appendChild(div);
+        div.querySelector('input').focus();
+        sauvegarder();
     }
 
-    // 2. Calculer quand tu tapes un chiffre
-    function calc(element) {
-        const row = element.closest('tr');
-        const inputs = row.querySelectorAll('input');
+    // 3. Le cerveau : Calcul instantané
+    function calculer(input) {
+        const card = input.closest('.entry-card');
+        const inputs = card.querySelectorAll('input');
         const prix = parseFloat(inputs[0].value) || 0;
         const qte = parseFloat(inputs[1].value) || 0;
-        const totalLigne = prix * qte;
+        const total = prix * qte;
 
-        row.querySelector('.row-total').innerText = totalLigne.toLocaleString();
+        // Mise à jour visuelle
+        card.querySelector('.line-total').innerText = total.toLocaleString('fr-FR');
         
-        // Mettre à jour le Grand Total en bas
-        let total = 0;
-        document.querySelectorAll('.row-total').forEach(span => {
-            total += parseFloat(span.innerText.replace(/\s/g, '').replace(/,/g, '')) || 0;
-        });
-        document.getElementById('grandTotal').innerText = total.toLocaleString() + " GNF";
+        // Mise à jour globale
+        calculerTotalGeneral();
+        sauvegarder();
     }
 
-    // 3. Supprimer une ligne
-    function del(btn) {
-        btn.closest('tr').remove();
-        // Recalculer le total après suppression
+    // 4. Calcul du Total Vert en bas
+    function calculerTotalGeneral() {
         let total = 0;
-        document.querySelectorAll('.row-total').forEach(span => {
-            total += parseFloat(span.innerText.replace(/\s/g, '').replace(/,/g, '')) || 0;
+        document.querySelectorAll('.entry-card').forEach(card => {
+            const inputs = card.querySelectorAll('input');
+            const prix = parseFloat(inputs[0].value) || 0;
+            const qte = parseFloat(inputs[1].value) || 0;
+            total += (prix * qte);
         });
-        document.getElementById('grandTotal').innerText = total.toLocaleString() + " GNF";
+        document.getElementById('grandTotal').innerText = total.toLocaleString('fr-FR');
     }
 
-    // 4. Afficher la photo
+    // 5. Supprimer
+    function supprimer(btn) {
+        if(confirm('Supprimer cette ligne ?')) {
+            btn.closest('.entry-card').remove();
+            calculerTotalGeneral();
+            sauvegarder();
+        }
+    }
+
+    // 6. Gestion Photo
     function handleImage(event) {
         const file = event.target.files[0];
         if (file) {
@@ -121,8 +278,22 @@
         }
     }
 
-    // Ajouter une ligne au démarrage
-    window.onload = function() { addRow(); };
+    // 7. Système de Sauvegarde (LocalStorage)
+    function sauvegarder() {
+        const content = document.getElementById('listeVentes').innerHTML;
+        // On sauvegarde le HTML pour le retrouver après, mais attention, les valeurs des inputs doivent être mises dans l'attribut 'value' pour être sauvées
+        document.querySelectorAll('input').forEach(input => {
+            input.setAttribute('value', input.value);
+        });
+        localStorage.setItem('agriData', document.getElementById('listeVentes').innerHTML);
+    }
+
+    // Réattacher les événements après rechargement
+    function reattachEvents() {
+        document.querySelectorAll('input').forEach(input => {
+            input.oninput = function() { calculer(this); };
+        });
+    }
 </script>
 
 </body>
