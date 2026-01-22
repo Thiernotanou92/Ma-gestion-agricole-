@@ -3,96 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agri-Expert Guinée (Multi-Calcul)</title>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <title>Agri-Sheet Guinée</title>
     <style>
-        body { font-family: sans-serif; background-color: #0f172a; color: white; padding: 10px; }
-        .card { background: #1e293b; padding: 15px; border-radius: 15px; border: 2px solid #3b82f6; }
-        .scan-btn { background: #3b82f6; color: white; padding: 18px; border-radius: 12px; text-align: center; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: block; }
-        .loader { display: none; color: #fbbf24; text-align: center; margin: 10px; font-weight: bold; }
-        table { width: 100%; margin-top: 15px; border-collapse: collapse; background: #0f172a; border-radius: 8px; overflow: hidden; }
-        th, td { border: 1px solid #334155; padding: 10px; text-align: right; font-size: 0.85em; }
-        th { background: #3b82f6; text-align: center; }
-        .final-result { background: #22c55e; color: #052e16; padding: 20px; border-radius: 12px; text-align: center; margin-top: 20px; font-size: 1.4em; font-weight: bold; border: 3px solid white; }
-        #preview { width: 100%; border-radius: 10px; margin-top: 10px; display: none; }
+        body { font-family: sans-serif; background-color: #0f172a; color: white; padding: 10px; margin: 0; }
+        .container { max-width: 600px; margin: auto; }
+        
+        /* Zone Photo en haut (toujours visible) */
+        .photo-area { position: sticky; top: 0; background: #1e293b; z-index: 10; padding: 10px; border-bottom: 2px solid #3b82f6; text-align: center; }
+        #preview { max-height: 150px; width: auto; border-radius: 5px; display: none; margin: 0 auto; }
+        .btn-scan { background: #3b82f6; border: none; padding: 10px 20px; color: white; border-radius: 20px; font-weight: bold; font-size: 0.9em; margin-bottom: 5px; }
+        
+        /* Tableau style Excel */
+        .sheet-container { padding: 10px; padding-bottom: 100px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #334155; color: #94a3b8; font-size: 0.8em; padding: 8px; text-align: center; }
+        td { padding: 5px; border-bottom: 1px solid #334155; }
+        
+        /* Inputs dans le tableau */
+        input[type="number"] { background: transparent; border: 1px solid #475569; color: white; width: 100%; padding: 8px; text-align: center; border-radius: 5px; font-size: 1.1em; }
+        input:focus { border-color: #22c55e; outline: none; background: #0f172a; }
+        
+        .row-total { text-align: right; font-weight: bold; color: #fbbf24; padding-right: 10px; }
+        .btn-del { color: #ef4444; background: none; border: none; font-size: 1.2em; }
+
+        /* Boutons d'action */
+        .floating-menu { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; padding: 15px; border-top: 2px solid #22c55e; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -4px 10px rgba(0,0,0,0.5); }
+        .total-display { font-size: 1.2em; font-weight: bold; color: #22c55e; }
+        .btn-add { background: #22c55e; color: black; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2 style="text-align:center; margin-top:0;">📊 Calculateur de Cahier</h2>
-    
-    <label class="scan-btn">
-        🔍 SCANNER MON CAHIER
-        <input type="file" accept="image/*" style="display:none" onchange="traiterCahier(event)">
-    </label>
-
-    <div id="loader" class="loader">⏳ Lecture du cahier en cours...</div>
-    <img id="preview">
-
-    <table id="resultTable">
-        <thead>
-            <tr>
-                <th style="text-align:left">Ligne détectée</th>
-                <th>Sous-Total (GNF)</th>
-            </tr>
-        </thead>
-        <tbody>
-            </tbody>
-    </table>
-
-    <div class="final-result">
-        TOTAL GÉNÉRAL : <br>
-        <span id="grandTotal">0</span> GNF
+<div class="container">
+    <div class="photo-area">
+        <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📸 VOIR PHOTO CAHIER</button>
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleImage(event)">
+        <img id="preview">
     </div>
-    
-    <button onclick="window.location.reload()" style="width:100%; background:transparent; color: #94a3b8; border:none; margin-top:15px; text-decoration:underline;">Effacer et recommencer</button>
+
+    <div class="sheet-container">
+        <h3 style="margin:0; color:#94a3b8; font-size:0.9em; text-align:center;">Remplis ton tableau ici :</h3>
+        <table id="myTable">
+            <thead>
+                <tr>
+                    <th style="width: 40%">Prix (GNF)</th>
+                    <th style="width: 25%">Qté</th>
+                    <th style="width: 30%">Total</th>
+                    <th style="width: 5%"></th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
+        <br><br>
+    </div>
+
+    <div class="floating-menu">
+        <div class="total-display">
+            TOTAL : <br>
+            <span id="grandTotal">0</span>
+        </div>
+        <button class="btn-add" onclick="addRow()">➕ LIGNE</button>
+    </div>
 </div>
 
 <script>
-    async function traiterCahier(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        document.getElementById('preview').src = URL.createObjectURL(file);
-        document.getElementById('preview').style.display = 'block';
-        document.getElementById('loader').style.display = 'block';
-        document.querySelector('#resultTable tbody').innerHTML = "";
-
-        try {
-            const result = await Tesseract.recognize(file, 'fra');
-            const lignes = result.data.text.split('\n');
-            let totalGeneral = 0;
-
-            lignes.forEach(ligne => {
-                // On cherche les lignes qui ressemblent à : 300.000 x 20
-                // On extrait les nombres
-                const nombres = ligne.replace(/\s/g, '').match(/\d+/g);
-                
-                if (nombres && nombres.length >= 2) {
-                    const prix = parseInt(nombres[0]);
-                    const quantite = parseInt(nombres[1]);
-                    
-                    if (prix > 100 && quantite > 0) { // Pour éviter les dates comme 2019
-                        const sousTotal = prix * quantite;
-                        totalGeneral += sousTotal;
-
-                        const tr = `<tr>
-                            <td style="text-align:left">${prix.toLocaleString()} x ${quantite}</td>
-                            <td>${sousTotal.toLocaleString()}</td>
-                        </tr>`;
-                        document.querySelector('#resultTable tbody').innerHTML += tr;
-                    }
-                }
-            });
-
-            document.getElementById('grandTotal').innerText = totalGeneral.toLocaleString();
-
-        } catch (e) {
-            alert("Erreur d'analyse. Assurez-vous que la photo est nette.");
-        }
-        document.getElementById('loader').style.display = 'none';
+    // 1. Ajouter une ligne vide
+    function addRow() {
+        const tbody = document.getElementById('tableBody');
+        const tr = document.createElement('tr');
+        
+        tr.innerHTML = `
+            <td><input type="number" placeholder="0" oninput="calc(this)"></td>
+            <td><input type="number" placeholder="0" oninput="calc(this)"></td>
+            <td class="row-total">0</td>
+            <td><button class="btn-del" onclick="del(this)">×</button></td>
+        `;
+        tbody.appendChild(tr);
     }
+
+    // 2. Calculer quand tu tapes un chiffre
+    function calc(element) {
+        const row = element.closest('tr');
+        const inputs = row.querySelectorAll('input');
+        const prix = parseFloat(inputs[0].value) || 0;
+        const qte = parseFloat(inputs[1].value) || 0;
+        const totalLigne = prix * qte;
+
+        row.querySelector('.row-total').innerText = totalLigne.toLocaleString();
+        
+        // Mettre à jour le Grand Total en bas
+        let total = 0;
+        document.querySelectorAll('.row-total').forEach(span => {
+            total += parseFloat(span.innerText.replace(/\s/g, '').replace(/,/g, '')) || 0;
+        });
+        document.getElementById('grandTotal').innerText = total.toLocaleString() + " GNF";
+    }
+
+    // 3. Supprimer une ligne
+    function del(btn) {
+        btn.closest('tr').remove();
+        // Recalculer le total après suppression
+        let total = 0;
+        document.querySelectorAll('.row-total').forEach(span => {
+            total += parseFloat(span.innerText.replace(/\s/g, '').replace(/,/g, '')) || 0;
+        });
+        document.getElementById('grandTotal').innerText = total.toLocaleString() + " GNF";
+    }
+
+    // 4. Afficher la photo
+    function handleImage(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const img = document.getElementById('preview');
+            img.src = URL.createObjectURL(file);
+            img.style.display = 'block';
+        }
+    }
+
+    // Ajouter une ligne au démarrage
+    window.onload = function() { addRow(); };
 </script>
 
 </body>
