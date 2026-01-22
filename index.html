@@ -3,116 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agri-Scanner Pro 2.0</title>
+    <title>Agri-Expert Guinée (Multi-Calcul)</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #0f172a; color: white; padding: 10px; }
-        .card { background: #1e293b; padding: 15px; border-radius: 15px; border-bottom: 5px solid #3b82f6; }
-        h2 { color: #3b82f6; text-align: center; font-size: 1.2em; }
-        .scan-zone { background: #3b82f6; color: white; padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; cursor: pointer; }
-        label { display: block; margin-top: 10px; color: #94a3b8; font-size: 0.8em; }
-        input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        .btn-save { background: #22c55e; color: white; padding: 15px; border: none; width: 100%; border-radius: 10px; font-weight: bold; margin-top: 15px; }
-        #preview { width: 100%; max-height: 150px; object-fit: contain; margin-top: 10px; display: none; border-radius: 8px; }
-        #loader { display: none; color: #fbbf24; font-size: 0.9em; text-align: center; margin: 10px 0; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 0.75em; }
-        th, td { border: 1px solid #334155; padding: 8px; text-align: center; background: #1e293b; }
-        .total-box { background: #22c55e; padding: 15px; border-radius: 10px; text-align: center; margin-top: 15px; font-weight: bold; font-size: 1.2em; }
+        body { font-family: sans-serif; background-color: #0f172a; color: white; padding: 10px; }
+        .card { background: #1e293b; padding: 15px; border-radius: 15px; border: 2px solid #3b82f6; }
+        .scan-btn { background: #3b82f6; color: white; padding: 18px; border-radius: 12px; text-align: center; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: block; }
+        .loader { display: none; color: #fbbf24; text-align: center; margin: 10px; font-weight: bold; }
+        table { width: 100%; margin-top: 15px; border-collapse: collapse; background: #0f172a; border-radius: 8px; overflow: hidden; }
+        th, td { border: 1px solid #334155; padding: 10px; text-align: right; font-size: 0.85em; }
+        th { background: #3b82f6; text-align: center; }
+        .final-result { background: #22c55e; color: #052e16; padding: 20px; border-radius: 12px; text-align: center; margin-top: 20px; font-size: 1.4em; font-weight: bold; border: 3px solid white; }
+        #preview { width: 100%; border-radius: 10px; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>🚜 Agri-Scanner Guinée</h2>
+    <h2 style="text-align:center; margin-top:0;">📊 Calculateur de Cahier</h2>
     
-    <div class="scan-zone" onclick="document.getElementById('fileInput').click()">
-        🔍 IMPORTER / SCANNER PHOTO
-    </div>
-    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="analyserPhoto(event)">
-    
-    <div id="loader">⏳ Analyse de l'image en cours...</div>
+    <label class="scan-btn">
+        🔍 SCANNER MON CAHIER
+        <input type="file" accept="image/*" style="display:none" onchange="traiterCahier(event)">
+    </label>
+
+    <div id="loader" class="loader">⏳ Lecture du cahier en cours...</div>
     <img id="preview">
 
-    <label>Produit (ex: Tomate, Melon)</label>
-    <input type="text" id="produit">
+    <table id="resultTable">
+        <thead>
+            <tr>
+                <th style="text-align:left">Ligne détectée</th>
+                <th>Sous-Total (GNF)</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
 
-    <div style="display:flex; gap:10px">
-        <div style="flex:1"><label>Quantité</label><input type="number" id="quantite"></div>
-        <div style="flex:1"><label>Prix Unitaire</label><input type="number" id="prix"></div>
+    <div class="final-result">
+        TOTAL GÉNÉRAL : <br>
+        <span id="grandTotal">0</span> GNF
     </div>
-
-    <label>Dépenses (GNF)</label>
-    <input type="number" id="depenses" value="0">
-
-    <button class="btn-save" onclick="ajouterVente()">✅ ENREGISTRER DANS LE BILAN</button>
+    
+    <button onclick="window.location.reload()" style="width:100%; background:transparent; color: #94a3b8; border:none; margin-top:15px; text-decoration:underline;">Effacer et recommencer</button>
 </div>
 
-<div class="total-box">Total Net: <span id="grandTotal">0</span> GNF</div>
-
-<table id="tableVentes">
-    <thead>
-        <tr>
-            <th>Produit</th>
-            <th>Qte</th>
-            <th>Bénéfice Net</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
-</table>
-
 <script>
-    let totalGlobal = 0;
-
-    async function analyserPhoto(event) {
+    async function traiterCahier(event) {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Afficher l'aperçu
-        const preview = document.getElementById('preview');
-        preview.src = URL.createObjectURL(file);
-        preview.style.display = 'block';
-        
-        // Lancer l'analyse
+        document.getElementById('preview').src = URL.createObjectURL(file);
+        document.getElementById('preview').style.display = 'block';
         document.getElementById('loader').style.display = 'block';
-        
+        document.querySelector('#resultTable tbody').innerHTML = "";
+
         try {
-            const result = await Tesseract.recognize(file, 'fra', { logger: m => console.log(m) });
-            const texte = result.data.text.toLowerCase();
-            console.log("Texte détecté:", texte);
+            const result = await Tesseract.recognize(file, 'fra');
+            const lignes = result.data.text.split('\n');
+            let totalGeneral = 0;
 
-            // Analyse intelligente simple
-            if (texte.includes('tomate')) document.getElementById('produit').value = 'Tomate';
-            if (texte.includes('melon')) document.getElementById('produit').value = 'Melon';
-            
-            // Chercher les chiffres (pourrait être amélioré)
-            const chiffres = texte.match(/\d+/g);
-            if (chiffres && chiffres.length > 0) {
-                document.getElementById('quantite').value = chiffres[0];
-            }
+            lignes.forEach(ligne => {
+                // On cherche les lignes qui ressemblent à : 300.000 x 20
+                // On extrait les nombres
+                const nombres = ligne.replace(/\s/g, '').match(/\d+/g);
+                
+                if (nombres && nombres.length >= 2) {
+                    const prix = parseInt(nombres[0]);
+                    const quantite = parseInt(nombres[1]);
+                    
+                    if (prix > 100 && quantite > 0) { // Pour éviter les dates comme 2019
+                        const sousTotal = prix * quantite;
+                        totalGeneral += sousTotal;
+
+                        const tr = `<tr>
+                            <td style="text-align:left">${prix.toLocaleString()} x ${quantite}</td>
+                            <td>${sousTotal.toLocaleString()}</td>
+                        </tr>`;
+                        document.querySelector('#resultTable tbody').innerHTML += tr;
+                    }
+                }
+            });
+
+            document.getElementById('grandTotal').innerText = totalGeneral.toLocaleString();
+
         } catch (e) {
-            alert("Erreur lors de la lecture de la photo");
+            alert("Erreur d'analyse. Assurez-vous que la photo est nette.");
         }
-        
         document.getElementById('loader').style.display = 'none';
-    }
-
-    function ajouterVente() {
-        const p = document.getElementById('produit').value;
-        const q = parseFloat(document.getElementById('quantite').value) || 0;
-        const pr = parseFloat(document.getElementById('prix').value) || 0;
-        const d = parseFloat(document.getElementById('depenses').value) || 0;
-        
-        const net = (q * pr) - d;
-        totalGlobal += net;
-
-        const row = `<tr><td>${p}</td><td>${q}</td><td>${net.toLocaleString()} GNF</td></tr>`;
-        document.querySelector('#tableVentes tbody').innerHTML += row;
-        document.getElementById('grandTotal').innerText = totalGlobal.toLocaleString();
-        
-        // Reset
-        document.getElementById('produit').value = "";
-        document.getElementById('quantite').value = "";
-        document.getElementById('preview').style.display = 'none';
     }
 </script>
 
