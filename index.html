@@ -3,128 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion Agricole Pro - Guinée</title>
+    <title>Agri-Scanner Pro 2.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #121212; color: white; padding: 15px; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        h2 { text-align: center; color: #4CAF50; }
-        label { display: block; margin-top: 10px; font-size: 0.9em; color: #bbb; }
-        input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; margin-top: 20px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-add { background-color: #4CAF50; color: white; }
-        .btn-clear { background-color: #f44336; color: white; margin-top: 10px; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 0.8em; }
-        th, td { border: 1px solid #333; padding: 8px; text-align: center; }
-        th { background: #333; }
-        .total-box { margin-top: 20px; padding: 15px; background: #333; border-radius: 10px; text-align: center; }
-        .profit { color: #4CAF50; font-size: 1.2em; font-weight: bold; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #0f172a; color: white; padding: 10px; }
+        .card { background: #1e293b; padding: 15px; border-radius: 15px; border-bottom: 5px solid #3b82f6; }
+        h2 { color: #3b82f6; text-align: center; font-size: 1.2em; }
+        .scan-zone { background: #3b82f6; color: white; padding: 15px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; cursor: pointer; }
+        label { display: block; margin-top: 10px; color: #94a3b8; font-size: 0.8em; }
+        input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        .btn-save { background: #22c55e; color: white; padding: 15px; border: none; width: 100%; border-radius: 10px; font-weight: bold; margin-top: 15px; }
+        #preview { width: 100%; max-height: 150px; object-fit: contain; margin-top: 10px; display: none; border-radius: 8px; }
+        #loader { display: none; color: #fbbf24; font-size: 0.9em; text-align: center; margin: 10px 0; }
+        table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 0.75em; }
+        th, td { border: 1px solid #334155; padding: 8px; text-align: center; background: #1e293b; }
+        .total-box { background: #22c55e; padding: 15px; border-radius: 10px; text-align: center; margin-top: 15px; font-weight: bold; font-size: 1.2em; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>🚜 Ma Vente Agricole</h2>
+    <h2>🚜 Agri-Scanner Guinée</h2>
     
-    <label>Nom du Produit (ex: Tomate)</label>
-    <input type="text" id="produit" placeholder="Ex: Melon">
+    <div class="scan-zone" onclick="document.getElementById('fileInput').click()">
+        🔍 IMPORTER / SCANNER PHOTO
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="analyserPhoto(event)">
+    
+    <div id="loader">⏳ Analyse de l'image en cours...</div>
+    <img id="preview">
 
-    <label>Quantité Arrivée</label>
-    <input type="number" id="arrivage" placeholder="0">
+    <label>Produit (ex: Tomate, Melon)</label>
+    <input type="text" id="produit">
 
-    <label>Quantité Vendue</label>
-    <input type="number" id="vendu" placeholder="0">
+    <div style="display:flex; gap:10px">
+        <div style="flex:1"><label>Quantité</label><input type="number" id="quantite"></div>
+        <div style="flex:1"><label>Prix Unitaire</label><input type="number" id="prix"></div>
+    </div>
 
-    <label>Pertes (Gâtés)</label>
-    <input type="number" id="pertes" placeholder="0" value="0">
+    <label>Dépenses (GNF)</label>
+    <input type="number" id="depenses" value="0">
 
-    <label>Prix Unitaire (GNF)</label>
-    <input type="number" id="prix" placeholder="0">
-
-    <label>Total Dépenses (Police, Magasin...)</label>
-    <input type="number" id="depenses" placeholder="0" value="0">
-
-    <button class="btn-add" onclick="ajouterVente()">➕ Enregistrer la Vente</button>
+    <button class="btn-save" onclick="ajouterVente()">✅ ENREGISTRER DANS LE BILAN</button>
 </div>
 
-<div class="total-box">
-    Bénéfice Net Total : <br>
-    <span id="grandTotal" class="profit">0</span> GNF
-</div>
+<div class="total-box">Total Net: <span id="grandTotal">0</span> GNF</div>
 
 <table id="tableVentes">
     <thead>
         <tr>
             <th>Produit</th>
-            <th>Stock</th>
-            <th>Total</th>
-            <th>Reste</th>
+            <th>Qte</th>
+            <th>Bénéfice Net</th>
         </tr>
     </thead>
     <tbody></tbody>
 </table>
 
-<button class="btn-clear" onclick="effacerTout()">🗑 Effacer tout l'historique</button>
-
 <script>
-    let historique = JSON.parse(localStorage.getItem('ventesAgri')) || [];
-    updateTable();
+    let totalGlobal = 0;
+
+    async function analyserPhoto(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Afficher l'aperçu
+        const preview = document.getElementById('preview');
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+        
+        // Lancer l'analyse
+        document.getElementById('loader').style.display = 'block';
+        
+        try {
+            const result = await Tesseract.recognize(file, 'fra', { logger: m => console.log(m) });
+            const texte = result.data.text.toLowerCase();
+            console.log("Texte détecté:", texte);
+
+            // Analyse intelligente simple
+            if (texte.includes('tomate')) document.getElementById('produit').value = 'Tomate';
+            if (texte.includes('melon')) document.getElementById('produit').value = 'Melon';
+            
+            // Chercher les chiffres (pourrait être amélioré)
+            const chiffres = texte.match(/\d+/g);
+            if (chiffres && chiffres.length > 0) {
+                document.getElementById('quantite').value = chiffres[0];
+            }
+        } catch (e) {
+            alert("Erreur lors de la lecture de la photo");
+        }
+        
+        document.getElementById('loader').style.display = 'none';
+    }
 
     function ajouterVente() {
-        const produit = document.getElementById('produit').value;
-        const arrivage = parseFloat(document.getElementById('arrivage').value) || 0;
-        const vendu = parseFloat(document.getElementById('vendu').value) || 0;
-        const pertes = parseFloat(document.getElementById('pertes').value) || 0;
-        const prix = parseFloat(document.getElementById('prix').value) || 0;
-        const depenses = parseFloat(document.getElementById('depenses').value) || 0;
-
-        if(!produit || prix <= 0) { alert("Remplis au moins le nom et le prix !"); return; }
-
-        const stock = arrivage - vendu - pertes;
-        const totalArgent = vendu * prix;
-        const resteFinal = totalArgent - depenses;
-
-        const nouvelleVente = { produit, stock, totalArgent, resteFinal };
-        historique.push(nouvelleVente);
-        localStorage.setItem('ventesAgri', JSON.stringify(historique));
+        const p = document.getElementById('produit').value;
+        const q = parseFloat(document.getElementById('quantite').value) || 0;
+        const pr = parseFloat(document.getElementById('prix').value) || 0;
+        const d = parseFloat(document.getElementById('depenses').value) || 0;
         
-        updateTable();
-        clearInputs();
-    }
+        const net = (q * pr) - d;
+        totalGlobal += net;
 
-    function updateTable() {
-        const tbody = document.querySelector('#tableVentes tbody');
-        tbody.innerHTML = "";
-        let grandTotal = 0;
-
-        historique.forEach(v => {
-            const row = `<tr>
-                <td>${v.produit}</td>
-                <td>${v.stock}</td>
-                <td>${v.totalArgent.toLocaleString()}</td>
-                <td><strong>${v.resteFinal.toLocaleString()}</strong></td>
-            </tr>`;
-            tbody.innerHTML += row;
-            grandTotal += v.resteFinal;
-        });
-
-        document.getElementById('grandTotal').innerText = grandTotal.toLocaleString();
-    }
-
-    function clearInputs() {
+        const row = `<tr><td>${p}</td><td>${q}</td><td>${net.toLocaleString()} GNF</td></tr>`;
+        document.querySelector('#tableVentes tbody').innerHTML += row;
+        document.getElementById('grandTotal').innerText = totalGlobal.toLocaleString();
+        
+        // Reset
         document.getElementById('produit').value = "";
-        document.getElementById('arrivage').value = "";
-        document.getElementById('vendu').value = "";
-        document.getElementById('pertes').value = "0";
-        document.getElementById('prix').value = "";
-        document.getElementById('depenses').value = "0";
-    }
-
-    function effacerTout() {
-        if(confirm("Supprimer toutes les données ?")) {
-            historique = [];
-            localStorage.removeItem('ventesAgri');
-            updateTable();
-        }
+        document.getElementById('quantite').value = "";
+        document.getElementById('preview').style.display = 'none';
     }
 </script>
 
